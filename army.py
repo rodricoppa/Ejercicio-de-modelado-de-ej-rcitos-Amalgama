@@ -1,20 +1,15 @@
-from abc import ABC, abstractmethod
-
-
 # ---------- Units ----------
 
-class Unit(ABC):
+class Unit:
     def __init__(self, years):
         self.years = years
         self.strength = 0
 
-    @abstractmethod
     def train(self):
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def transform(self):
-        pass
+        return None
 
 
 class Pikeman(Unit):
@@ -53,7 +48,7 @@ class Knight(Unit):
         return 30
 
     def transform(self):
-        return None, 0  # cannot transform
+        return None  # knights cannot transform
 
 
 # ---------- Army ----------
@@ -72,49 +67,52 @@ class Army:
         self.units = []
         self.battles = []
 
-        self._create_initial_units()
+        self._create_units()
 
-    def _create_initial_units(self):
-        config = CIVILIZATIONS[self.civilization]
+    def _create_units(self):
+        data = CIVILIZATIONS[self.civilization]
 
-        for _ in range(config["pikeman"]):
-            self.units.append(Pikeman(years=0))
+        for _ in range(data["pikeman"]):
+            self.units.append(Pikeman(0))
 
-        for _ in range(config["archer"]):
-            self.units.append(Archer(years=0))
+        for _ in range(data["archer"]):
+            self.units.append(Archer(0))
 
-        for _ in range(config["knight"]):
-            self.units.append(Knight(years=0))
+        for _ in range(data["knight"]):
+            self.units.append(Knight(0))
 
     def total_strength(self):
-        return sum(unit.strength for unit in self.units)
+        total = 0
+        for unit in self.units:
+            total += unit.strength
+        return total
 
-    def lose_strongest_units(self, amount):
+    def remove_strongest_units(self, count):
         self.units.sort(key=lambda u: u.strength, reverse=True)
-        self.units = self.units[amount:]
+        self.units = self.units[count:]
 
     def attack(self, other_army):
         my_strength = self.total_strength()
         enemy_strength = other_army.total_strength()
 
         if my_strength > enemy_strength:
-            other_army.lose_strongest_units(2)
+            other_army.remove_strongest_units(2)
             self.gold += 100
             self.battles.append("Win")
             other_army.battles.append("Loss")
 
         elif my_strength < enemy_strength:
-            self.lose_strongest_units(2)
+            self.remove_strongest_units(2)
             other_army.gold += 100
             self.battles.append("Loss")
             other_army.battles.append("Win")
 
         else:
-            # tie
+            # tie: both armies lose one unit
             if self.units:
-                self.lose_strongest_units(1)
+                self.remove_strongest_units(1)
             if other_army.units:
-                other_army.lose_strongest_units(1)
+                other_army.remove_strongest_units(1)
 
             self.battles.append("Tie")
             other_army.battles.append("Tie")
